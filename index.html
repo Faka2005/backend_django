@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gestion des utilisateurs - Lumnie</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background-color: #f5f7fb;
+      padding: 30px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #357abd;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background-color: white;
+      margin: 8px 0;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .delete-btn {
+      background-color: #e74c3c;
+    }
+
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+
+    #message {
+      text-align: center;
+      margin-top: 10px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gestion des utilisateurs</h1>
+
+  <!-- Formulaire ajout utilisateur -->
+  <h2>Ajouter un utilisateur</h2>
+  <form id="userForm">
+    <input type="text" id="username" placeholder="Nom d'utilisateur" required />
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Mot de passe" required />
+    <button type="submit">Ajouter</button>
+  </form>
+
+  <div id="message"></div>
+
+  <!-- Liste des utilisateurs -->
+  <h2>Liste des utilisateurs</h2>
+  <ul id="userList"></ul>
+
+  <script>
+    // === CONFIG ===
+    // 🔹 Met à jour cette URL quand ton backend est sur Render :
+    const API_BASE = "http://localhost:5000/api"; 
+    const userList = document.getElementById("userList");
+    const userForm = document.getElementById("userForm");
+    const message = document.getElementById("message");
+
+    // === Charger les utilisateurs ===
+    async function getUsers() {
+      try {
+        const res = await fetch(API_BASE + "/entries/"); // si tu veux lister les entrées
+        const data = await res.json();
+
+        userList.innerHTML = "";
+        if (!Array.isArray(data)) {
+          userList.innerHTML = "<li>Aucun utilisateur trouvé.</li>";
+          return;
+        }
+
+        data.forEach(user => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <span>${user.username || "Sans nom"} (${user.email})</span>
+            <button class="delete-btn" onclick="deleteUser('${user._id}')">Supprimer</button>
+          `;
+          userList.appendChild(li);
+        });
+      } catch (err) {
+        console.error("Erreur chargement utilisateurs :", err);
+        message.textContent = "Erreur de connexion au serveur.";
+      }
+    }
+
+    // === Ajouter un utilisateur ===
+    userForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      message.textContent = "";
+
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!username || !email || !password) {
+        message.textContent = "Tous les champs sont requis.";
+        return;
+      }
+
+      try {
+        const res = await fetch(API_BASE + "/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Erreur serveur.");
+
+        message.textContent = "Utilisateur ajouté avec succès ✅";
+        userForm.reset();
+        getUsers();
+      } catch (err) {
+        message.textContent = err.message;
+      }
+    });
+
+    // === Supprimer un utilisateur ===
+    async function deleteUser(userId) {
+      if (!confirm("Supprimer cet utilisateur ?")) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/entries/${userId}`, { method: "DELETE" });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || "Erreur suppression");
+
+        message.textContent = "Utilisateur supprimé avec succès 🗑️";
+        getUsers();
+      } catch (err) {
+        message.textContent = err.message;
+      }
+    }
+
+    // Charger les utilisateurs dès le début
+    getUsers();
+  </script>
+</body>
+</html>
