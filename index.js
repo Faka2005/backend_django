@@ -138,6 +138,12 @@ app.post("/api/gallery/:galleryId/:userId/media", upload.single("file"), async (
     res.status(500).json({ error: "Erreur ajout média" });
   }
 });
+app.post("/test-upload", upload.single("file"), (req, res) => {
+  console.log(req.file);
+  if (!req.file) return res.status(400).json({ error: "Aucun fichier reçu" });
+  res.json({ success: true, file: req.file });
+});
+
 
 // Lancer serveur
 app.listen(PORT, () => console.log(`✅ Serveur sur http://localhost:${PORT}`));
